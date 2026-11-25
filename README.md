@@ -68,7 +68,7 @@ web/     the editor: React, TypeScript, Vite; highlight and diagram layout are p
 
 ## Tests
 
-On a Linux machine, from a copy of the committed tree (the working tree was clean) just before this README was added: `cargo fmt --check` and `cargo clippy -- -D warnings` are clean; 79 Rust tests, 32 unit tests (which load the real compiled WebAssembly, not a stand-in) and 8 browser tests (Chrome) pass. GitHub Actions runs the same steps from a clean checkout.
+On a Linux machine, from a copy of the working tree (clean, at the commit before this README was added): `cargo fmt --check` and `cargo clippy -- -D warnings` are clean; 79 Rust tests, 32 unit tests (which load the real compiled WebAssembly, not a stand-in) and 8 browser tests (Chrome) pass. GitHub Actions runs the same steps from a clean checkout.
 
 ### What running it found
 
