@@ -180,7 +180,8 @@ pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> 
                     continue;
                 }
                 if complete && branches.len() < 2 {
-                    unresolved = true; // too few outgoing edges: same reason as a task without a next step
+                    // With no branches at all, every step behind this gateway would look unreachable or endless.
+                    unresolved |= branches.is_empty();
                     diags.push(
                         Diagnostic::new(
                             "E107",
@@ -380,9 +381,6 @@ fn reaches_end(nodes: &[Node], edges: &[Edge]) -> Vec<bool> {
 /// The closest known name, if it is close enough and unambiguous.
 pub fn suggest<'a>(wanted: &str, known: impl Iterator<Item = &'a str>) -> Option<&'a str> {
     let wanted_len = wanted.chars().count();
-    if wanted_len > MAX_SUGGEST_LEN {
-        return None;
-    }
     let limit = (wanted_len / 3).clamp(1, 2);
     let mut best: Option<(&str, usize)> = None;
     let mut tie = false;

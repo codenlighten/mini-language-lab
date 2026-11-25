@@ -231,17 +231,25 @@ fn a_task_without_a_next_step_does_not_cause_unreachable_or_endless_loop_reports
 }
 
 #[test]
-fn a_gateway_with_too_few_branches_does_not_cause_follow_on_graph_reports() {
-    let c = codes(&proc(
-        "start -> g\ngateway g { only -> a }\ntask a -> done\nend done",
-    ));
+fn a_gateway_with_no_branches_does_not_cause_follow_on_graph_reports() {
+    // With no branches the edges to `a` and `done` are missing, so they would look unreachable.
+    let c = codes(&proc("start -> g\ngateway g { }\ntask a -> done\nend done"));
     assert_eq!(c, vec!["E107"], "{c:?}");
 }
 
 #[test]
+fn a_gateway_with_one_branch_is_reported_and_graph_checks_still_run() {
+    // Its single edge exists, so nothing is missing: the orphan is still found.
+    let c = codes(&proc(
+        "start -> g\ngateway g { only -> done }\ntask orphan -> done\nend done",
+    ));
+    assert!(c.contains(&"E107") && c.contains(&"W201"), "{c:?}");
+}
+
+#[test]
 fn a_very_long_name_cannot_exhaust_memory_in_the_did_you_mean_search() {
-    let long = "a".repeat(8000);
-    let other = "b".repeat(8000);
+    let long = "a".repeat(30_000);
+    let other = "b".repeat(30_000);
     let src = format!("process P {{ start -> {long} end {other} }}");
     let t = std::time::Instant::now();
     let a = analyze(&src);
