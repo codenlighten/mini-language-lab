@@ -25,7 +25,8 @@ main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-t
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem; min-width: 0; }
 .bar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: .75rem; }
 .bar h2 { margin-right: auto; }
-.examples { display: flex; gap: .5rem; align-items: center; font-size: .875rem; }
+.examples { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; min-width: 0; max-width: 100%; font-size: .875rem; }
+.examples select { min-width: 0; max-width: 100%; } /* the longest example title is wider than a phone */
 select, button { font: inherit; padding: .35rem .7rem; border: 1px solid var(--line); border-radius: .375rem; background: var(--card); color: var(--fg); }
 button { cursor: pointer; }
 button:disabled { opacity: .5; cursor: default; }

@@ -70,10 +70,16 @@ test("diagnostics are keyboard-reachable buttons", async ({ page }) => {
   await expect(editor(page)).toBeFocused();
 });
 
-test("works on a phone-sized screen without sideways page scroll", async ({ page }) => {
-  await page.setViewportSize({ width: 360, height: 740 });
-  await page.goto("/");
-  await expect(page.getByText("No problems found.")).toBeVisible();
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
-});
+// 343 is a 360 px phone once a classic (always visible) scrollbar takes 17 px: the case that CI's browser
+// showed and a desktop browser with overlay scrollbars hides.
+for (const width of [320, 343, 360, 390]) {
+  test(`no sideways page scroll at ${width}px wide`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 740 });
+    await page.goto("/");
+    await expect(page.getByText("No problems found.")).toBeVisible();
+    await page.getByLabel("Example").selectOption({ label: "A tour of the mistakes it catches" }); // many problems, wide text
+    await expect(page.getByRole("list", { name: "Problems" })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+}

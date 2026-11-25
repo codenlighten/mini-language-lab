@@ -68,7 +68,7 @@ web/     the editor: React, TypeScript, Vite; highlight and diagram layout are p
 
 ## Tests
 
-On a Linux machine, from a copy of the working tree (clean, at the commit before this README was added): `cargo fmt --check` and `cargo clippy -- -D warnings` are clean; 79 Rust tests, 32 unit tests (which load the real compiled WebAssembly, not a stand-in) and 8 browser tests (Chrome) pass. GitHub Actions runs the same steps from a clean checkout.
+On a Linux machine, from a copy of the working tree (clean, at the commit before this README was added): `cargo fmt --check` and `cargo clippy -- -D warnings` are clean; 79 Rust tests, 32 unit tests (which load the real compiled WebAssembly, not a stand-in) and 11 browser tests (Chrome) pass. GitHub Actions runs the same steps from a clean checkout and is the check that found the last two problems in the list below.
 
 ### What running it found
 
@@ -80,6 +80,8 @@ Building this turned up problems that no review had pointed out. Each is fixed a
 - A single typo made its predecessor look endless and everything behind it look unreachable. Whole-graph checks now wait until every name resolves.
 - A test of the WebAssembly glue compared the returned length with text it had read using that same length, so it could not fail. It now compares against the core's output.
 - My own "mistakes tour" example hid two of the errors it advertised, because the tour mixed unrelated mistakes in one process.
+- On a fresh clone the build failed, because Git does not keep the empty `web/public` folder the build script copies into. GitHub's CI found it; my own machine never could, because copying the working tree copied the empty folder too.
+- On GitHub's browser the page scrolled sideways on phone-width screens: the example dropdown (259 px wide) was wider than the screen. Chrome with overlay scrollbars hid it. The browser tests now check widths of 320, 343 (a 360 px phone with a classic scrollbar), 360 and 390 px.
 
 ### Independent review
 
@@ -122,6 +124,7 @@ Each change below was made on its own, the suite run, and the code restored. Eve
 | The WASM wrapper reads output through a view taken before the call (stale after memory growth) | `survives memory growth...`, `refuses input over 1 MiB...` |
 | Clicking a problem selects by column instead of UTF-16 offset | both browser tests about selecting a range |
 | The diagram draws only the first process | the browser test of the mistakes tour |
+| The example dropdown allowed to be wider than the screen | the sideways-scroll tests at 320 px and 343 px |
 
 ## Limits
 
@@ -129,7 +132,7 @@ Each change below was made on its own, the suite run, and the code restored. Eve
 - The whole text is re-analyzed on every keystroke. That is instant at editor sizes and is capped at 1 MiB, but it is not incremental.
 - The diagram layout is simple (columns by distance from `start`, no edge-crossing minimisation) and the diagram is read-only.
 - The editor is not a language server and does not offer completion, rename or go-to-definition.
-- Only Chrome ran the browser tests. Keyboard use and automated checks were done; a screen reader was not used.
+- The browser tests ran in Chrome and in GitHub Actions' Chromium, not in Firefox or Safari. Keyboard use and automated checks were done; a screen reader was not used.
 - The WebAssembly module is single-threaded and the next call overwrites its output buffer (the protocol is documented in `wasm/src/lib.rs`). It is not run through `wasm-opt`.
 - Timings are not claimed: no performance benchmark was run.
 
