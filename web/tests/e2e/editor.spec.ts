@@ -49,10 +49,10 @@ test("format tidies valid text, and explains itself when the text has syntax err
 test("the mistakes tour shows errors and warnings and a diagram per process", async ({ page }) => {
   await page.getByLabel("Example").selectOption({ label: "A tour of the mistakes it catches" });
   const list = page.getByRole("list", { name: "Problems" });
-  for (const code of ["E101", "E102", "E107", "E108", "W201", "E012", "E014", "E001"]) {
+  for (const code of ["E101", "E102", "E106", "E107", "E108", "W201", "E012", "E014", "E001"]) {
     await expect(list.getByText(code, { exact: true }).first()).toBeVisible();
   }
-  await expect(page.locator("figure.diagram")).toHaveCount(3);
+  await expect(page.locator("figure.diagram")).toHaveCount(4);
   await expect(page.locator(".node.unreachable").first()).toBeVisible();
 });
 

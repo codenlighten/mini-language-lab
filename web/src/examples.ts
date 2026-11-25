@@ -43,7 +43,7 @@ process Order {
     id: "mistakes",
     title: "A tour of the mistakes it catches",
     source: `// Every process below has something to find.
-// Each process shows one kind of mistake: wrong structure, a mistyped name, or invalid text.
+// Each process shows one kind of mistake: wrong structure, missing pieces, a mistyped name, or invalid text.
 process Broken {
   start -> intake
   task intake "Take the order" -> pick
@@ -54,11 +54,17 @@ process Broken {
   task ship "Ship it" -> done
   task ship "Ship twice" -> done            // duplicate name
   task review "Orphan step" -> done         // nothing leads here
-  gateway solo "One way only" {             // a gateway needs two branches
-    only -> done
-  }
   task loop1 -> loop2
   task loop2 -> loop1                       // reachable, but can never finish
+  end done
+}
+
+process Incomplete {
+  start -> pick
+  gateway pick "One way only" {             // a gateway needs two branches
+    only -> wait
+  }
+  task wait "Wait"                          // a task must say what comes next
   end done
 }
 
