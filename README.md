@@ -1,6 +1,6 @@
 # mini-language-lab: Procflow, a small language with real tooling
 
-A tiny process-description language (steps, decisions, loops) with the tooling an editor needs: a lexer, a parser that keeps going after errors, a validator with "did you mean" hints, a comment-preserving formatter and a diagram, written in **Rust**, compiled to **WebAssembly** and used by a **React + TypeScript** browser editor.
+A tiny process-description language (steps, decisions, loops) with the tooling an editor needs: a lexer, a parser that keeps going after errors, a validator with "did you mean" hints, a comment-preserving formatter and a diagram, written in **Rust**, compiled to **WebAssembly** and driving a **React + TypeScript** browser editor.
 
 It shows how to build language tooling that holds up on messy input, and how to hand it to a JavaScript front end without getting the offsets wrong.
 
@@ -130,7 +130,7 @@ Each change below was made on its own, the suite run, and the code restored. Eve
 - The diagram layout is simple (columns by distance from `start`, no edge-crossing minimisation) and the diagram is read-only.
 - The editor is not a language server and does not offer completion, rename or go-to-definition.
 - Only Chrome ran the browser tests. Keyboard use and automated checks were done; a screen reader was not used.
-- The WebAssembly module is single-threaded and its output buffer is reused by the next call (the protocol is documented in `wasm/src/lib.rs`). It is not run through `wasm-opt`.
+- The WebAssembly module is single-threaded and the next call overwrites its output buffer (the protocol is documented in `wasm/src/lib.rs`). It is not run through `wasm-opt`.
 - Timings are not claimed: no performance benchmark was run.
 
 ## Dependencies
