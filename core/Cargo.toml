@@ -1,0 +1,9 @@
+[package]
+name = "procflow-core"
+version = "0.1.0"
+description = "Lexer, parser, validator, formatter and graph builder for the Procflow process language. No dependencies."
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

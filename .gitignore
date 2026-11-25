@@ -1,0 +1,9 @@
+/target
+node_modules
+dist
+web/public/procflow.wasm
+.env*
+!.env.example
+*.tsbuildinfo
+test-results
+playwright-report

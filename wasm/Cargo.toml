@@ -1,0 +1,13 @@
+[package]
+name = "procflow-wasm"
+version = "0.1.0"
+description = "WebAssembly build of procflow-core with a plain C-ABI (no wasm-bindgen)."
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+procflow-core = { path = "../core" }
