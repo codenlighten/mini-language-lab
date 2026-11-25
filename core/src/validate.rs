@@ -41,8 +41,9 @@ pub struct ProcessGraph {
 }
 
 /// `complete` says the process had no syntax errors. The checks that need a whole, correct process
-/// (missing start/end, missing next step, too few branches, unreachable steps, endless loops) run only
-/// then: after a syntax error they would mostly report its side effects, not real problems.
+/// (missing start/end, missing next step, too few branches) run only then, and the whole-graph checks
+/// (unreachable steps, endless loops) also need every name to resolve: after a syntax error or a typo
+/// they would mostly report side effects of that one mistake, not real problems.
 pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> ProcessGraph {
     let name = process
         .name
@@ -133,6 +134,7 @@ pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> 
     // Pass 2: edges and per-step rules.
     let mut edges: Vec<Edge> = Vec::new();
     let mut seen_start = false;
+    let mut unresolved = false;
     for item in &process.items {
         match item {
             Item::Start { target, .. } => {
@@ -141,7 +143,7 @@ pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> 
                 }
                 seen_start = true;
                 if let (Some(t), Some(from)) = (target, start_idx) {
-                    link(&nodes, &index, diags, &mut edges, from, t, None);
+                    unresolved |= !link(&nodes, &index, diags, &mut edges, from, t, None);
                 }
             }
             Item::Task { id, next, .. } => {
@@ -152,16 +154,21 @@ pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> 
                     continue; // a duplicate declaration, already reported
                 }
                 match next {
-                    Some(t) => link(&nodes, &index, diags, &mut edges, from, t, None),
-                    None if complete => diags.push(
-                        Diagnostic::new(
-                            "E106",
-                            Severity::Error,
-                            format!("task `{}` does not say what comes next", id.name),
-                            id.span,
-                        )
-                        .with_hint(format!("add `-> next_step`, or use `end {}`", id.name)),
-                    ),
+                    Some(t) => {
+                        unresolved |= !link(&nodes, &index, diags, &mut edges, from, t, None)
+                    }
+                    None if complete => {
+                        unresolved = true; // an edge is missing, so graph-wide conclusions would be side effects
+                        diags.push(
+                            Diagnostic::new(
+                                "E106",
+                                Severity::Error,
+                                format!("task `{}` does not say what comes next", id.name),
+                                id.span,
+                            )
+                            .with_hint(format!("add `-> next_step`, or use `end {}`", id.name)),
+                        );
+                    }
                     None => {}
                 }
             }
@@ -173,6 +180,7 @@ pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> 
                     continue;
                 }
                 if complete && branches.len() < 2 {
+                    unresolved = true; // too few outgoing edges: same reason as a task without a next step
                     diags.push(
                         Diagnostic::new(
                             "E107",
@@ -199,7 +207,7 @@ pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> 
                         ));
                     }
                     if let Some(t) = &b.target {
-                        link(
+                        unresolved |= !link(
                             &nodes,
                             &index,
                             diags,
@@ -217,7 +225,9 @@ pub fn check(process: &Process, complete: bool, diags: &mut Vec<Diagnostic>) -> 
 
     // Pass 3: reachability.
     let depth = bfs_depth(nodes.len(), &edges, start_idx);
-    if complete && start_idx.is_some() {
+    // Reachability needs the whole graph: with an unresolved name some edge is missing, and every step
+    // behind it would be reported as unreachable or endless, a side effect of that one typo.
+    if complete && !unresolved && start_idx.is_some() {
         for (i, n) in nodes.iter().enumerate() {
             if depth[i].is_none() {
                 diags.push(
@@ -294,9 +304,12 @@ fn link(
     from: usize,
     target: &crate::ast::Ident,
     label: Option<String>,
-) {
+) -> bool {
     match index.get(&target.name) {
-        Some(&to) => edges.push(Edge { from, to, label }),
+        Some(&to) => {
+            edges.push(Edge { from, to, label });
+            true
+        }
         None => {
             let mut d = Diagnostic::new(
                 "E102",
@@ -314,6 +327,7 @@ fn link(
                 d = d.with_hint(format!("did you mean `{s}`?"));
             }
             diags.push(d);
+            false
         }
     }
 }
@@ -365,10 +379,19 @@ fn reaches_end(nodes: &[Node], edges: &[Edge]) -> Vec<bool> {
 
 /// The closest known name, if it is close enough and unambiguous.
 pub fn suggest<'a>(wanted: &str, known: impl Iterator<Item = &'a str>) -> Option<&'a str> {
-    let limit = (wanted.chars().count() / 3).clamp(1, 2);
+    let wanted_len = wanted.chars().count();
+    if wanted_len > MAX_SUGGEST_LEN {
+        return None;
+    }
+    let limit = (wanted_len / 3).clamp(1, 2);
     let mut best: Option<(&str, usize)> = None;
     let mut tie = false;
     for k in known {
+        // Names whose lengths differ by more than the limit cannot be within it: skip the comparison.
+        let k_len = k.chars().count();
+        if k_len > MAX_SUGGEST_LEN || k_len.abs_diff(wanted_len) > limit {
+            continue;
+        }
         let d = edit_distance(wanted, k);
         if d == 0 || d > limit {
             continue;
@@ -389,26 +412,29 @@ pub fn suggest<'a>(wanted: &str, known: impl Iterator<Item = &'a str>) -> Option
     }
 }
 
+/// Names longer than this are never compared when suggesting a fix: a suggestion is for a typo in a
+/// normal name, and the comparison cost grows with the product of the lengths.
+const MAX_SUGGEST_LEN: usize = 64;
+
 /// Edit distance where swapping two neighbouring letters counts as one edit (the most common typo),
-/// i.e. the "optimal string alignment" variant of Damerau-Levenshtein.
+/// i.e. the "optimal string alignment" variant of Damerau-Levenshtein. Keeps three rows, not the whole
+/// table, so memory is linear in the shorter name.
 pub fn edit_distance(a: &str, b: &str) -> usize {
     let a: Vec<char> = a.chars().collect();
     let b: Vec<char> = b.chars().collect();
-    let mut rows: Vec<Vec<usize>> = Vec::with_capacity(a.len() + 1);
-    rows.push((0..=b.len()).collect());
+    let mut prev2: Vec<usize> = Vec::new();
+    let mut prev: Vec<usize> = (0..=b.len()).collect();
     for i in 1..=a.len() {
         let mut cur = vec![i];
         for j in 1..=b.len() {
             let cost = usize::from(a[i - 1] != b[j - 1]);
-            let mut d = (rows[i - 1][j - 1] + cost)
-                .min(rows[i - 1][j] + 1)
-                .min(cur[j - 1] + 1);
+            let mut d = (prev[j - 1] + cost).min(prev[j] + 1).min(cur[j - 1] + 1);
             if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] {
-                d = d.min(rows[i - 2][j - 2] + 1);
+                d = d.min(prev2[j - 2] + 1);
             }
             cur.push(d);
         }
-        rows.push(cur);
+        prev2 = std::mem::replace(&mut prev, cur);
     }
-    rows[a.len()][b.len()]
+    prev[b.len()]
 }

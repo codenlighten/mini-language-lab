@@ -158,3 +158,20 @@ fn blank_line_between_processes() {
     let out = format("process A{start->x end x}process B{start->y end y}").unwrap();
     assert!(out.contains("}\n\nprocess B {"), "{out}");
 }
+
+#[test]
+fn a_comment_stays_with_the_construct_it_follows_not_with_an_earlier_item_on_the_same_line() {
+    let src =
+        "process P { start -> g gateway g { // branch note\n yes -> a, no -> b } end a end b }";
+    let out = format(src).unwrap();
+    // The note must not end up trailing `start -> g`.
+    assert!(!out.contains("start -> g  //"), "{out}");
+    assert!(out.contains("// branch note"), "{out}");
+    assert_eq!(comment_count(&out), 1);
+}
+
+#[test]
+fn a_comment_on_the_same_line_right_after_an_item_is_still_a_trailing_comment() {
+    let out = format("process P { start -> a   // go\n end a }").unwrap();
+    assert!(out.contains("start -> a  // go\n"), "{out}");
+}

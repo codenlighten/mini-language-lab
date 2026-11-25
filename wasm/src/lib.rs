@@ -35,18 +35,22 @@ pub extern "C" fn output_ptr() -> *const u8 {
     OUTPUT.with(|o| o.borrow().as_ptr())
 }
 
-fn read_input<'a>(ptr: *const u8, len: usize) -> Option<&'a str> {
+/// # Safety
+/// `ptr` must be valid for reads of `len` bytes for as long as the returned text is used.
+unsafe fn read_input<'a>(ptr: *const u8, len: usize) -> Option<&'a str> {
     if ptr.is_null() {
         return None;
     }
-    // SAFETY: the caller passes a region it got from `alloc` and filled with `len` bytes.
-    let bytes = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let bytes = std::slice::from_raw_parts(ptr, len);
     std::str::from_utf8(bytes).ok()
 }
 
 /// Analyzes the program and returns the length of the JSON result, or `-1` if the input is not UTF-8.
+///
+/// # Safety
+/// `ptr` must point to `len` readable bytes (a region from [`alloc`] that the caller filled).
 #[no_mangle]
-pub extern "C" fn analyze(ptr: *const u8, len: usize) -> isize {
+pub unsafe extern "C" fn analyze(ptr: *const u8, len: usize) -> isize {
     match read_input(ptr, len) {
         Some(text) => set_output(
             procflow_core::analysis_json(text, &procflow_core::analyze(text)).into_bytes(),
@@ -57,8 +61,11 @@ pub extern "C" fn analyze(ptr: *const u8, len: usize) -> isize {
 
 /// Formats the program and returns the length of the result, `-1` if the input is not UTF-8, or `-2`
 /// if the program has syntax errors and so cannot be formatted.
+///
+/// # Safety
+/// `ptr` must point to `len` readable bytes (a region from [`alloc`] that the caller filled).
 #[no_mangle]
-pub extern "C" fn format_source(ptr: *const u8, len: usize) -> isize {
+pub unsafe extern "C" fn format_source(ptr: *const u8, len: usize) -> isize {
     match read_input(ptr, len) {
         Some(text) => match procflow_core::format(text) {
             Some(out) => set_output(out.into_bytes()) as isize,
@@ -72,10 +79,10 @@ pub extern "C" fn format_source(ptr: *const u8, len: usize) -> isize {
 mod tests {
     use super::*;
 
-    fn call(f: extern "C" fn(*const u8, usize) -> isize, input: &[u8]) -> (isize, String) {
+    fn call(f: unsafe extern "C" fn(*const u8, usize) -> isize, input: &[u8]) -> (isize, String) {
         let p = alloc(input.len());
         unsafe { std::ptr::copy_nonoverlapping(input.as_ptr(), p, input.len()) };
-        let n = f(p, input.len());
+        let n = unsafe { f(p, input.len()) };
         let out = if n >= 0 {
             unsafe { std::slice::from_raw_parts(output_ptr(), n as usize) }.to_vec()
         } else {

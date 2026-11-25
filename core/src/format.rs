@@ -76,7 +76,12 @@ impl Out<'_> {
             }
         }
         if let Some(&c) = self.comments.get(self.next) {
-            if !self.text[span.end..c.0].contains('\n') {
+            // Trailing only if nothing but spaces lies between the item and the comment; otherwise the comment
+            // belongs to whatever comes next on the line (another item, or a brace).
+            if self.text[span.end..c.0]
+                .chars()
+                .all(|ch| matches!(ch, ' ' | '\t' | '\r'))
+            {
                 let t = self.comment_text(c).to_string();
                 if let Some(last) = lines.last_mut() {
                     last.push_str("  ");
