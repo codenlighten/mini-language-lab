@@ -40,3 +40,42 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           npm run test:e2e
+
+  demo:
+    # Publishes the live demo, only from main and only after every check above has passed.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [rust, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the WebAssembly module and the app
+        working-directory: web
+        run: |
+          npm ci
+          npm run build:wasm
+          npm run build -- --base=/mini-language-lab/
+          test -s dist/procflow.wasm
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: web/dist
+      - id: deploy
+        uses: actions/deploy-pages@v5

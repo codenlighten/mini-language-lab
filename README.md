@@ -1,5 +1,7 @@
 # mini-language-lab: Procflow, a small language with real tooling
 
+**[Open the live editor](https://codenlighten.github.io/mini-language-lab/)** (GitHub Pages, published by this repository's CI after the tests pass; everything runs in your browser).
+
 A tiny process-description language (steps, decisions, loops) with the tooling an editor needs: a lexer, a parser that keeps going after errors, a validator with "did you mean" hints, a comment-preserving formatter and a diagram, written in **Rust**, compiled to **WebAssembly** and driving a **React + TypeScript** browser editor.
 
 It shows how to build language tooling that holds up on messy input, and how to hand it to a JavaScript front end without getting the offsets wrong.
