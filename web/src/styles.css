@@ -61,7 +61,7 @@ button:disabled { opacity: .5; cursor: default; }
 .diagram { margin: 0 0 1rem; }
 .diagram figcaption { font-weight: 600; margin-bottom: .25rem; }
 .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: .375rem; background: var(--bg); }
-.diagram svg { display: block; max-width: none; }
+.diagram svg { display: block; height: auto; margin: 0 auto; }
 .node rect, .node polygon, .node circle { stroke-width: 2; }
 .node.task rect, .node.start circle { fill: var(--node); stroke: var(--node-line); }
 .node.gateway polygon { fill: var(--gate); stroke: var(--gate-line); }

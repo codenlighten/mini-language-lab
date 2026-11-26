@@ -3,6 +3,8 @@ import { layoutProcess, type PositionedNode } from "../layout.ts";
 import type { ProcessModel } from "../types.ts";
 
 const MAX_LABEL = 17;
+/** The diagram shrinks to fit its panel, but not below this scale; past that it scrolls. */
+const MIN_SCALE = 0.75;
 const short = (s: string) => (s.length > MAX_LABEL ? `${s.slice(0, MAX_LABEL - 1)}…` : s);
 
 function Shape({ n }: { n: PositionedNode }) {
@@ -41,7 +43,12 @@ export function Diagram({ model }: { model: ProcessModel }) {
     <figure className="diagram">
       <figcaption>{model.name || "(unnamed process)"}</figcaption>
       <div className="scroll">
-        <svg viewBox={`0 0 ${layout.width} ${layout.height}`} width={layout.width} height={layout.height} role="img" aria-label={summary}>
+        <svg
+          viewBox={`0 0 ${layout.width} ${layout.height}`}
+          style={{ width: "100%", maxWidth: layout.width, minWidth: layout.width * MIN_SCALE }}
+          role="img"
+          aria-label={summary}
+        >
           <defs>
             <marker id={arrow} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" className="arrowhead" />

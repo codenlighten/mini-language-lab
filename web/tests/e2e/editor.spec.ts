@@ -17,6 +17,15 @@ test("loads the Rust engine, analyzes the default example and draws its diagram"
   await expect(page.locator("svg [data-edge]")).toHaveCount(6);
 });
 
+for (const width of [1280, 390]) {
+  test(`the default diagram fits its panel at ${width}px wide`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    const box = page.locator("figure.diagram .scroll");
+    await expect(box).toBeVisible();
+    expect(await box.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+  });
+}
+
 test("a typo is underlined, listed with a suggestion, and clicking it selects exactly that text", async ({ page }) => {
   await setSource(page, "process P {\n  start -> a\n  task a -> sihp\n  task ship -> done\n  end done\n}");
   const item = page.getByRole("button", { name: /E102/ });
