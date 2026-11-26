@@ -79,6 +79,8 @@ jobs:
           # a name per attempt, so a re-run does not collide with the first attempt's upload
           name: github-pages-${{ github.run_attempt }}
           path: web/dist
+      # GitHub can take a few seconds to list a finished upload, and the next step looks for it at once.
+      - run: sleep 20
       - id: deploy
         uses: actions/deploy-pages@v5
         with:
