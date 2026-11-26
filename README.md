@@ -31,7 +31,7 @@ cargo test                                                  # the language tools
 cd web && npm ci && npm run build:wasm && npm run dev       # the editor at http://localhost:5173
 ```
 
-`npm test` runs the unit tests against the real compiled module; `npm run test:e2e` drives the editor in a browser (set `PW_CHANNEL=chrome` to use an installed Chrome).
+`npm test` runs the unit tests against the real compiled module. `npm run test:e2e` drives the editor in a browser: first run `npx playwright install chromium` once (add `--with-deps` on a bare Linux machine), or set `PW_CHANNEL=chrome` to use an installed Chrome.
 
 ## The language
 
