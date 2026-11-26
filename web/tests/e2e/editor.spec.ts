@@ -42,6 +42,30 @@ test("a long step label wraps inside its box instead of being cut off", async ({
   expect(second.y).toBeGreaterThanOrEqual(first.y + first.height * 0.75);
 });
 
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`connector labels stay readable in the ${colorScheme} theme`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    const svg = page.locator("figure.diagram svg").first();
+    await expect(svg.locator(".edge-label")).toHaveText(["yes", "no"]);
+    const problems = await svg.evaluate((el) => {
+      const background = getComputedStyle(el.closest(".scroll")!).backgroundColor;
+      const connectors = [...el.querySelectorAll("[data-edge] path")];
+      return [...el.querySelectorAll(".edge-label")].flatMap((label) => {
+        const found: string[] = [];
+        // A line painted after the label would run through it.
+        if (connectors.some((c) => label.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING))
+          found.push(`${label.textContent}: a connector is painted over it`);
+        // The label's own line passes through it, so it needs a halo in the background colour, under the letters.
+        const s = getComputedStyle(label);
+        if (s.paintOrder.split(" ")[0] !== "stroke" || s.stroke !== background || parseFloat(s.strokeWidth) < 3)
+          found.push(`${label.textContent}: no halo (${s.paintOrder}, ${s.stroke}, ${s.strokeWidth})`);
+        return found;
+      });
+    });
+    expect(problems).toEqual([]);
+  });
+}
+
 test("a typo is underlined, listed with a suggestion, and clicking it selects exactly that text", async ({ page }) => {
   await setSource(page, "process P {\n  start -> a\n  task a -> sihp\n  task ship -> done\n  end done\n}");
   const item = page.getByRole("button", { name: /E102/ });

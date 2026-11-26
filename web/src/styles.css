@@ -73,6 +73,7 @@ button:disabled { opacity: .5; cursor: default; }
 .edge path { stroke: var(--edge); stroke-width: 1.5; }
 .edge.back path { stroke-dasharray: 5 3; }
 .arrowhead { fill: var(--edge); }
-.edge-label { fill: var(--muted); font: 11px system-ui, sans-serif; }
+/* A label sits on its own connector: a halo in the background colour breaks the line around the letters. */
+.edge-label { fill: var(--muted); stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; paint-order: stroke; font: 11px system-ui, sans-serif; }
 details { margin-top: .5rem; font-size: .875rem; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

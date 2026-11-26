@@ -66,13 +66,17 @@ export function Diagram({ model }: { model: ProcessModel }) {
           {layout.edges.map((e, i) => (
             <g key={i} className={`edge${e.back ? " back" : ""}`} data-edge={`${e.from}->${e.to}`}>
               <path d={e.path} fill="none" markerEnd={`url(#${arrow})`} />
-              {e.label && (
-                <text x={e.labelX} y={e.labelY} textAnchor="middle" className="edge-label">
-                  {e.label}
-                </text>
-              )}
             </g>
           ))}
+          {/* Labels after every connector, so that no line is painted over them. */}
+          {layout.edges.map(
+            (e, i) =>
+              e.label && (
+                <text key={i} x={e.labelX} y={e.labelY} textAnchor="middle" className="edge-label">
+                  {e.label}
+                </text>
+              ),
+          )}
           {layout.nodes.map((n) => (
             <Shape key={n.id} n={n} />
           ))}

@@ -78,6 +78,8 @@ On a Linux machine, from a copy of the working tree (clean, at the commit before
 
 Long step labels were later made to wrap (2026-11-26). With that change 45 unit tests and 14 browser tests pass on a second Linux machine, and eight deliberate breaks of the new code were each caught, two of them only after I strengthened the tests.
 
+A look at the live demo then showed the connectors running through the "yes" and "no" labels. Labels are now painted above every connector with a background halo; a browser test for each colour theme failed on the old code, and with it 16 browser tests pass in CI.
+
 ### What running it found
 
 Building this turned up problems that no review had pointed out. Each is fixed and guarded by a test:
