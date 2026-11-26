@@ -1,11 +1,13 @@
 import { useId } from "react";
+import { wrapLabel } from "../label.ts";
 import { layoutProcess, type PositionedNode } from "../layout.ts";
 import type { ProcessModel } from "../types.ts";
 
 const MAX_LABEL = 17;
 /** The diagram shrinks to fit its panel, but not below this scale; past that it scrolls. */
 const MIN_SCALE = 0.75;
-const short = (s: string) => (s.length > MAX_LABEL ? `${s.slice(0, MAX_LABEL - 1)}…` : s);
+const LINE_HEIGHT = 14;
+const short = (s: string) => wrapLabel(s, MAX_LABEL, 1)[0] ?? "";
 
 function Shape({ n }: { n: PositionedNode }) {
   const cls = `node ${n.kind}${n.reachable ? "" : " unreachable"}`;
@@ -13,6 +15,9 @@ function Shape({ n }: { n: PositionedNode }) {
   const title = n.kind === "start" ? "start" : `${n.id}${n.label ? `: ${n.label}` : ""}`;
   const x = n.cx - n.w / 2;
   const y = n.cy - n.h / 2;
+  // A task's box has room for two lines; a diamond narrows too fast for more than one.
+  const lines = wrapLabel(text, MAX_LABEL, n.kind === "task" ? 2 : 1);
+  const firstLine = n.cy + 4 - ((lines.length - 1) * LINE_HEIGHT) / 2;
   return (
     <g className={cls} data-node={n.id}>
       <title>{title}</title>
@@ -22,8 +27,12 @@ function Shape({ n }: { n: PositionedNode }) {
       {n.kind === "end" && <circle cx={n.cx} cy={n.cy} r={n.w / 2 - 6} className="inner" />}
       {n.kind === "start" && <text x={n.cx} y={n.cy + 4} textAnchor="middle" className="small">start</text>}
       {n.kind !== "start" && n.kind !== "end" && (
-        <text x={n.cx} y={n.cy + 4} textAnchor="middle">
-          {short(text)}
+        <text x={n.cx} y={firstLine} textAnchor="middle">
+          {lines.map((line, i) => (
+            <tspan key={i} x={n.cx} dy={i === 0 ? 0 : LINE_HEIGHT}>
+              {line}
+            </tspan>
+          ))}
         </text>
       )}
       {n.kind === "end" && (

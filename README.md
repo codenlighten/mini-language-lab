@@ -4,6 +4,8 @@
 
 **[Open the live editor](https://codenlighten.github.io/mini-language-lab/)** (GitHub Pages, published by this repository's CI after the tests pass; everything runs in your browser).
 
+![The editor: a short process description on the left, with its diagram drawn from top to bottom on the right](docs/editor.png)
+
 A tiny process-description language (steps, decisions, loops) with the tooling an editor needs: a lexer, a parser that keeps going after errors, a validator with "did you mean" hints, a comment-preserving formatter and a diagram, written in **Rust**, compiled to **WebAssembly** and driving a **React + TypeScript** browser editor.
 
 It shows how to build language tooling that holds up on messy input, and how to hand it to a JavaScript front end without getting the offsets wrong.
@@ -74,6 +76,8 @@ web/     the editor: React, TypeScript, Vite; highlight and diagram layout are p
 
 On a Linux machine, from a copy of the working tree (clean, at the commit before this README was added): `cargo fmt --check` and `cargo clippy -- -D warnings` are clean; 79 Rust tests, 37 unit tests (which load the real compiled WebAssembly, not a stand-in) and 13 browser tests (Chrome) pass. GitHub Actions runs the same steps from a clean checkout; it found two problems that my machine could not (listed below).
 
+Long step labels were later made to wrap (2026-11-26). With that change 45 unit tests and 14 browser tests pass on a second Linux machine, and eight deliberate breaks of the new code were each caught, two of them only after I strengthened the tests.
+
 ### What running it found
 
 Building this turned up problems that no review had pointed out. Each is fixed and guarded by a test:
@@ -86,6 +90,7 @@ Building this turned up problems that no review had pointed out. Each is fixed a
 - My own "mistakes tour" example hid two of the errors it advertised, because the tour mixed unrelated mistakes in one process.
 - On a fresh clone the build failed, because Git does not keep the empty `web/public` folder the build script copies into. GitHub's CI found it; my own machine never could, because copying the working tree copied the empty folder too.
 - On GitHub's browser the page scrolled sideways on phone-width screens: the example dropdown (259 px wide) was wider than the screen. Chrome with overlay scrollbars hid it. The browser tests now check widths of 320, 343 (a 360 px phone with a classic scrollbar), 360 and 390 px.
+- A screenshot of the live editor showed its own default example cut off ("Order from suppl…"). Step labels now wrap onto a second line, with a test that the text stays inside its box.
 - Publishing the live demo showed two layout faults that every test had passed over: the default diagram ran off the side of its panel, and after one typo the cut-off steps stacked in a single line with the arrows through them. The flow now runs top to bottom, a cut-off part keeps its own shape, and tests check that the diagram fits at desktop and phone widths. Screenshots of the fix then showed a backward arrow running through a neighbouring step, fixed by placing its ends on the outside of the row.
 
 ### Independent review
@@ -142,6 +147,7 @@ Each change below was made on its own, the suite run, and the code restored. Eve
 
 - It is a small language: one level of structure, ASCII names, no expressions, no data, no BPMN or other standard. It demonstrates tooling techniques; it is not a modelling product.
 - The whole text is re-analyzed on every keystroke. That is instant at editor sizes and is capped at 1 MiB, but it is not incremental.
+- Step labels wrap by counting characters, not measuring them: a task gets two lines of 17, decisions and ends one, and a line of unusually wide characters could still overflow.
 - The diagram layout is simple (rows by distance from `start`, no edge-crossing minimisation: a long edge can pass behind a step, as can one of two backward arrows leaving or entering the same row) and the diagram is read-only. It shrinks to fit its panel down to three quarters size, then scrolls.
 - The editor is not a language server and does not offer completion, rename or go-to-definition.
 - The browser tests ran in Chrome and in GitHub Actions' Chromium, not in Firefox or Safari. Keyboard use and automated checks were done; a screen reader was not used.

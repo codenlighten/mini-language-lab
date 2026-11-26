@@ -26,6 +26,22 @@ for (const width of [1280, 390]) {
   });
 }
 
+test("a long step label wraps inside its box instead of being cut off", async ({ page }) => {
+  await page.goto("/");
+  const step = page.locator('[data-node="backorder"]');
+  await expect(step.locator("tspan")).toHaveText(["Order from", "supplier"]);
+  const box = (await step.locator("rect").boundingBox())!;
+  const text = (await step.locator("text").boundingBox())!;
+  expect(text.x).toBeGreaterThanOrEqual(box.x);
+  expect(text.y).toBeGreaterThanOrEqual(box.y);
+  expect(text.x + text.width).toBeLessThanOrEqual(box.x + box.width);
+  expect(text.y + text.height).toBeLessThanOrEqual(box.y + box.height);
+  // The second line sits under the first, not on top of it.
+  const first = (await step.locator("tspan").first().boundingBox())!;
+  const second = (await step.locator("tspan").last().boundingBox())!;
+  expect(second.y).toBeGreaterThanOrEqual(first.y + first.height * 0.75);
+});
+
 test("a typo is underlined, listed with a suggestion, and clicking it selects exactly that text", async ({ page }) => {
   await setSource(page, "process P {\n  start -> a\n  task a -> sihp\n  task ship -> done\n  end done\n}");
   const item = page.getByRole("button", { name: /E102/ });
